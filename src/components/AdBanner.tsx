@@ -1,11 +1,52 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sparkles, Megaphone, Info } from 'lucide-react';
+
+declare global {
+  interface Window {
+    adsbygoogle?: any[];
+  }
+}
 
 interface AdBannerProps {
   slotLocation?: 'header' | 'footer' | 'sidebar';
+  adClient?: string;
+  adSlot?: string;
+  adFormat?: string;
 }
 
-export const AdBanner: React.FC<AdBannerProps> = ({ slotLocation = 'header' }) => {
+export const AdBanner: React.FC<AdBannerProps> = ({
+  slotLocation = 'header',
+  adClient = import.meta.env?.VITE_ADSENSE_CLIENT_ID || '',
+  adSlot = import.meta.env?.VITE_ADSENSE_SLOT_ID || '',
+  adFormat = 'auto',
+}) => {
+  const isRealAdSenseConfigured = Boolean(adClient && adSlot);
+
+  useEffect(() => {
+    if (isRealAdSenseConfigured) {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (err) {
+        console.warn('AdSense initialization warning:', err);
+      }
+    }
+  }, [isRealAdSenseConfigured, adClient, adSlot]);
+
+  if (isRealAdSenseConfigured) {
+    return (
+      <div className="w-full my-4 text-center overflow-hidden">
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client={adClient}
+          data-ad-slot={adSlot}
+          data-ad-format={adFormat}
+          data-full-width-responsive="true"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full my-4 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-emerald-500/10 border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 overflow-hidden relative">
       <div className="flex items-center gap-3">
@@ -34,7 +75,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({ slotLocation = 'header' }) =
           href="#ad-sponsor"
           onClick={(e) => {
             e.preventDefault();
-            alert('Monetization Ad Space: Connected with Google AdSense / Mobile Ad Network');
+            alert('Monetization Ad Space: Google AdSense ready. Add VITE_ADSENSE_CLIENT_ID and VITE_ADSENSE_SLOT_ID to enable live ads.');
           }}
           className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-xs text-center"
         >
