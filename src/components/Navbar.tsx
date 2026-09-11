@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent">
-                FinStatus & Projector
+                CashBalance.Online
               </span>
               <span className="hidden sm:inline-block text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full ml-2 font-medium">
                 Global Free Edition

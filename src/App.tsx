@@ -150,7 +150,7 @@ export function App() {
 
       {/* Footer Legal & Copyright Notice */}
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-400 py-6 border-t border-slate-200 mt-12 w-full">
-        <p>© {new Date().getFullYear()} FinStatus & Projector Web App. Free & accessible financial management.</p>
+        <p>© {new Date().getFullYear()} CashBalance.Online. Free & accessible financial management.</p>
         <div className="flex justify-center gap-4 mt-2">
           <button onClick={() => setIsLegalOpen(true)} className="hover:underline text-slate-500 font-semibold">
             Legal Disclaimer & Terms
