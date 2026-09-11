@@ -105,6 +105,11 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 md:pb-12 flex flex-col justify-between">
+      {/* Primary Semantic H1 for SEO Search Engine Indexing */}
+      <h1 className="sr-only">
+        CashBalance.Online - Personal Finance Projector, Credit Card Bill Tracker & Cash Flow Simulator
+      </h1>
+
       <div>
         <Navbar
           activeTab={activeTab}
