@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateProjection, isItemActiveOnDate } from './projectionEngine';
+import { generateProjection, isItemActiveOnDate, calculatePeriodIntervalDays } from './projectionEngine';
 import type { FinancialState, FinancialItem } from '../types/finance';
 
 describe('projectionEngine', () => {
@@ -35,6 +35,55 @@ describe('projectionEngine', () => {
     expect(isItemActiveOnDate(item, new Date('2025-01-15T00:00:00'))).toBe(true);
     expect(isItemActiveOnDate(item, new Date('2025-02-15T00:00:00'))).toBe(false);
     expect(isItemActiveOnDate(item, new Date('2025-07-15T00:00:00'))).toBe(true);
+  });
+
+  it('handles each X days custom interval', () => {
+    const item: FinancialItem = {
+      id: '3',
+      name: 'Freelance Payout Every 10 Days',
+      amount: 500,
+      type: 'income',
+      paymentMethodType: 'cash_account',
+      periodicity: 'each_x_days',
+      intervalDays: 10,
+      startDate: '2025-01-01',
+    };
+
+    expect(isItemActiveOnDate(item, new Date('2025-01-01T00:00:00'))).toBe(true);
+    expect(isItemActiveOnDate(item, new Date('2025-01-05T00:00:00'))).toBe(false);
+    expect(isItemActiveOnDate(item, new Date('2025-01-11T00:00:00'))).toBe(true);
+    expect(isItemActiveOnDate(item, new Date('2025-01-21T00:00:00'))).toBe(true);
+  });
+
+  it('handles times_per_period interval calculations and rounding modes', () => {
+    // 3 times per week (7 / 3 = 2.333)
+    expect(calculatePeriodIntervalDays(3, 'week', 'round')).toBe(2);
+    expect(calculatePeriodIntervalDays(3, 'week', 'floor')).toBe(2);
+    expect(calculatePeriodIntervalDays(3, 'week', 'ceil')).toBe(3);
+
+    // 3 times per month (30 / 3 = 10)
+    expect(calculatePeriodIntervalDays(3, 'month', 'round')).toBe(10);
+
+    // 7 times per month (30 / 7 = 4.285)
+    expect(calculatePeriodIntervalDays(7, 'month', 'floor')).toBe(4);
+    expect(calculatePeriodIntervalDays(7, 'month', 'ceil')).toBe(5);
+
+    const item: FinancialItem = {
+      id: '4',
+      name: 'Gym Workout Coach',
+      amount: 30,
+      type: 'expense',
+      paymentMethodType: 'cash_account',
+      periodicity: 'times_per_period',
+      timesPerPeriodCount: 3,
+      timesPerPeriodUnit: 'week',
+      roundingMode: 'round', // 7/3 => 2 days
+      startDate: '2025-01-01',
+    };
+
+    expect(isItemActiveOnDate(item, new Date('2025-01-01T00:00:00'))).toBe(true);
+    expect(isItemActiveOnDate(item, new Date('2025-01-03T00:00:00'))).toBe(true);
+    expect(isItemActiveOnDate(item, new Date('2025-01-05T00:00:00'))).toBe(true);
   });
 
   it('generates 1 year projection and updates credit card balance and payments', () => {
@@ -94,5 +143,35 @@ describe('projectionEngine', () => {
     expect(paymentRow).toBeDefined();
     expect(paymentRow?.amount).toBe(100);
     expect(paymentRow?.totalCreditCardDebt).toBe(0);
+  });
+
+  it('correctly applies dateOverrides to shift transaction dates and recalculate balances', () => {
+    const mockState: FinancialState = {
+      initialCashBalance: 1000,
+      creditCards: [],
+      financialItems: [
+        {
+          id: 'bonus',
+          name: 'One Time Bonus',
+          amount: 500,
+          type: 'income',
+          paymentMethodType: 'cash_account',
+          periodicity: 'one_time',
+          startDate: '2025-01-10',
+        },
+      ],
+      dateOverrides: {
+        'bonus_2025-01-10': '2025-01-02', // Move bonus from Jan 10 to Jan 2
+      },
+    };
+
+    const startDate = new Date('2025-01-01T00:00:00');
+    const rows = generateProjection(mockState, 1, startDate);
+
+    expect(rows.length).toBe(1);
+    expect(rows[0].date).toBe('2025-01-02');
+    expect(rows[0].originalDate).toBe('2025-01-10');
+    expect(rows[0].isDateOverridden).toBe(true);
+    expect(rows[0].cashBalance).toBe(1500);
   });
 });

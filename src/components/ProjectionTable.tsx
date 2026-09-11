@@ -8,16 +8,25 @@ import {
   TrendingUp,
   CreditCard,
   Search,
+  Undo2,
+  CalendarDays,
 } from 'lucide-react';
 import type { FinancialState } from '../types/finance';
 import { generateProjection } from '../utils/projectionEngine';
 import { exportToCSV, exportToExcel } from '../utils/exporter';
+import { ProjectionChart } from './ProjectionChart';
 
 interface ProjectionTableProps {
   state: FinancialState;
+  onUpdateDateOverride?: (rowId: string, newDate: string | null) => void;
+  children?: React.ReactNode;
 }
 
-export const ProjectionTable: React.FC<ProjectionTableProps> = ({ state }) => {
+export const ProjectionTable: React.FC<ProjectionTableProps> = ({
+  state,
+  onUpdateDateOverride,
+  children,
+}) => {
   const [yearsToProject, setYearsToProject] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
@@ -177,7 +186,12 @@ export const ProjectionTable: React.FC<ProjectionTableProps> = ({ state }) => {
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-slate-50 text-slate-600 sticky top-0 z-10 font-bold border-b border-slate-200 uppercase tracking-wider">
               <tr>
-                <th className="py-3.5 px-4">Date</th>
+                <th className="py-3.5 px-4 min-w-[170px]">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5 text-indigo-600" />
+                    Date (Editable)
+                  </span>
+                </th>
                 <th className="py-3.5 px-4">Concept / Description</th>
                 <th className="py-3.5 px-4">Type</th>
                 <th className="py-3.5 px-4">Payment Method</th>
@@ -195,19 +209,50 @@ export const ProjectionTable: React.FC<ProjectionTableProps> = ({ state }) => {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, idx) => {
+                filteredRows.map((row) => {
                   const isIncome = row.type === 'income';
                   const isCardPayment = row.type === 'card_payment';
 
                   return (
                     <tr
-                      key={idx}
+                      key={row.rowId}
                       className={`hover:bg-slate-50/80 transition ${
-                        isCardPayment ? 'bg-indigo-50/40' : ''
+                        isCardPayment ? 'bg-indigo-50/40' : row.isDateOverridden ? 'bg-amber-50/30' : ''
                       }`}
                     >
-                      <td className="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">
-                        {row.date}
+                      <td className="py-2.5 px-4 font-semibold text-slate-900 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="date"
+                              value={row.date}
+                              onChange={(e) => {
+                                if (e.target.value && onUpdateDateOverride) {
+                                  onUpdateDateOverride(row.rowId, e.target.value);
+                                }
+                              }}
+                              className={`px-2 py-1 rounded-lg text-xs font-bold border transition focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                                row.isDateOverridden
+                                  ? 'bg-amber-100/80 border-amber-300 text-amber-900'
+                                  : 'bg-slate-100/70 border-slate-200 text-slate-800 hover:bg-slate-200/60'
+                              }`}
+                            />
+                            {row.isDateOverridden && onUpdateDateOverride && (
+                              <button
+                                onClick={() => onUpdateDateOverride(row.rowId, null)}
+                                className="p-1 text-amber-700 hover:text-amber-900 hover:bg-amber-200/60 rounded transition"
+                                title={`Reset date override back to original date (${row.originalDate})`}
+                              >
+                                <Undo2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          {row.isDateOverridden && (
+                            <span className="text-[10px] text-amber-700 font-semibold italic">
+                              Overridden (Orig: {row.originalDate})
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 font-bold text-slate-900">{row.concept}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
@@ -263,6 +308,11 @@ export const ProjectionTable: React.FC<ProjectionTableProps> = ({ state }) => {
           </table>
         </div>
       </div>
+
+      {/* Projection Chart directly below Table */}
+      <ProjectionChart rows={allRows} />
+
+      {children}
     </div>
   );
 };

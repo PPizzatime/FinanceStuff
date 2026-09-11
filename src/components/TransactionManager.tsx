@@ -20,6 +20,8 @@ const PERIODICITY_OPTIONS: { label: string; value: Periodicity }[] = [
   { label: 'Quarterly (Every 3 months)', value: 'quarterly' },
   { label: 'Semi-Annually (Every 6 months e.g., work savings bonus)', value: 'semi_annually' },
   { label: 'Annually (Once a year)', value: 'annually' },
+  { label: 'Each X Days (Custom Interval)', value: 'each_x_days' },
+  { label: 'Times Per Period (Frequency)', value: 'times_per_period' },
 ];
 
 export const TransactionManager: React.FC<TransactionManagerProps> = ({
@@ -42,6 +44,10 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
     paymentMethodType: PaymentMethodType;
     creditCardId: string;
     periodicity: Periodicity;
+    intervalDays: number;
+    timesPerPeriodCount: number;
+    timesPerPeriodUnit: 'day' | 'week' | 'month' | 'year';
+    roundingMode: 'round' | 'floor' | 'ceil';
     startDate: string;
     dayOfMonth: number;
     notes: string;
@@ -52,6 +58,10 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
     paymentMethodType: 'cash_account',
     creditCardId: creditCards[0]?.id || '',
     periodicity: 'monthly',
+    intervalDays: 10,
+    timesPerPeriodCount: 3,
+    timesPerPeriodUnit: 'month',
+    roundingMode: 'round',
     startDate: new Date().toISOString().split('T')[0],
     dayOfMonth: 1,
     notes: '',
@@ -66,6 +76,10 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
       paymentMethodType: 'cash_account',
       creditCardId: creditCards[0]?.id || '',
       periodicity: 'monthly',
+      intervalDays: 10,
+      timesPerPeriodCount: 3,
+      timesPerPeriodUnit: 'month',
+      roundingMode: 'round',
       startDate: new Date().toISOString().split('T')[0],
       dayOfMonth: new Date().getDate(),
       notes: '',
@@ -82,6 +96,10 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
       paymentMethodType: item.paymentMethodType,
       creditCardId: item.creditCardId || creditCards[0]?.id || '',
       periodicity: item.periodicity,
+      intervalDays: item.intervalDays || 10,
+      timesPerPeriodCount: item.timesPerPeriodCount || 3,
+      timesPerPeriodUnit: item.timesPerPeriodUnit || 'month',
+      roundingMode: item.roundingMode || 'round',
       startDate: item.startDate,
       dayOfMonth: item.dayOfMonth || 1,
       notes: item.notes || '',
@@ -109,6 +127,19 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
     return item.type === filterType;
   });
 
+  const getPeriodicityText = (item: FinancialItem) => {
+    if (item.periodicity === 'each_x_days') {
+      return `Every ${item.intervalDays || 1} Days`;
+    }
+    if (item.periodicity === 'times_per_period') {
+      const unit = item.timesPerPeriodUnit || 'month';
+      const count = item.timesPerPeriodCount || 1;
+      const rounding = item.roundingMode ? ` (${item.roundingMode})` : '';
+      return `${count} times per ${unit}${rounding}`;
+    }
+    return PERIODICITY_OPTIONS.find((p) => p.value === item.periodicity)?.label || item.periodicity;
+  };
+
   return (
     <div className="space-y-6">
       {/* Starting Cash Balance Setting & Header */}
@@ -119,7 +150,7 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
               <DollarSign className="w-6 h-6 text-emerald-600" /> Income, Expenses & Recurring Charges
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Configure your salary, 6-month job savings returns, recurring subscription services, and home bills.
+              Configure your salary, 6-month job savings returns, recurring subscription services, and custom recurring schedules.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
@@ -205,7 +236,7 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden divide-y divide-slate-100">
           {filteredItems.map((item) => {
             const card = creditCards.find((c) => c.id === item.creditCardId);
-            const periodicityLabel = PERIODICITY_OPTIONS.find((p) => p.value === item.periodicity)?.label;
+            const periodicityLabel = getPeriodicityText(item);
 
             return (
               <div
@@ -239,7 +270,7 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                         <Repeat className="w-3.5 h-3.5 text-slate-400" />
                         {periodicityLabel}
                       </span>
@@ -425,6 +456,91 @@ export const TransactionManager: React.FC<TransactionManagerProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Conditional fields for Each X Days */}
+              {formData.periodicity === 'each_x_days' && (
+                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                  <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">
+                    Repeat Every (X) Days
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-indigo-700 font-medium">Occurs every</span>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={formData.intervalDays}
+                      onChange={(e) => setFormData({ ...formData, intervalDays: Math.max(1, Number(e.target.value)) })}
+                      className="w-24 px-3 py-1.5 rounded-lg border border-indigo-200 bg-white text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                    <span className="text-xs text-indigo-700 font-medium">days</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Conditional fields for Times Per Period */}
+              {formData.periodicity === 'times_per_period' && (
+                <div className="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">
+                        Frequency Count
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={formData.timesPerPeriodCount}
+                        onChange={(e) =>
+                          setFormData({ ...formData, timesPerPeriodCount: Math.max(1, Number(e.target.value)) })
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-indigo-200 bg-white text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">
+                        Per Unit
+                      </label>
+                      <select
+                        value={formData.timesPerPeriodUnit}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            timesPerPeriodUnit: e.target.value as 'day' | 'week' | 'month' | 'year',
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-indigo-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">
+                      Date Interval Rounding Strategy
+                    </label>
+                    <select
+                      value={formData.roundingMode}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          roundingMode: e.target.value as 'round' | 'floor' | 'ceil',
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-indigo-200 bg-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    >
+                      <option value="round">Round Nearest Day (Standard)</option>
+                      <option value="floor">Round Down (Floor)</option>
+                      <option value="ceil">Round Up (Ceil)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
