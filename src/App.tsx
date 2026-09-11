@@ -105,6 +105,11 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 md:pb-12 flex flex-col justify-between">
+      {/* Primary Semantic H1 for SEO Search Engine Indexing */}
+      <h1 className="sr-only">
+        CashBalance.Online - Personal Finance Projector, Credit Card Bill Tracker & Cash Flow Simulator
+      </h1>
+
       <div>
         <Navbar
           activeTab={activeTab}
@@ -150,7 +155,7 @@ export function App() {
 
       {/* Footer Legal & Copyright Notice */}
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-400 py-6 border-t border-slate-200 mt-12 w-full">
-        <p>© {new Date().getFullYear()} FinStatus & Projector Web App. Free & accessible financial management.</p>
+        <p>© {new Date().getFullYear()} CashBalance.Online. Free & accessible financial management.</p>
         <div className="flex justify-center gap-4 mt-2">
           <button onClick={() => setIsLegalOpen(true)} className="hover:underline text-slate-500 font-semibold">
             Legal Disclaimer & Terms
