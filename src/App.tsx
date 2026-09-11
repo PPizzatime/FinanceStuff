@@ -26,6 +26,22 @@ export function App() {
     saveUserAccount(userAccount);
   }, [userAccount]);
 
+  // Date Override Handler
+  const handleUpdateDateOverride = (rowId: string, newDate: string | null) => {
+    setFinancialState((prev) => {
+      const nextOverrides = { ...(prev.dateOverrides || {}) };
+      if (newDate === null) {
+        delete nextOverrides[rowId];
+      } else {
+        nextOverrides[rowId] = newDate;
+      }
+      return {
+        ...prev,
+        dateOverrides: nextOverrides,
+      };
+    });
+  };
+
   // Credit Card handlers
   const handleAddCard = (cardData: Omit<CreditCard, 'id'>) => {
     const newCard: CreditCard = {
@@ -102,7 +118,9 @@ export function App() {
           {/* Top Banner Advertisement for Revenue Generation */}
           <AdBanner slotLocation="header" />
 
-          {activeTab === 'projection' && <ProjectionTable state={financialState} />}
+          {activeTab === 'projection' && (
+            <ProjectionTable state={financialState} onUpdateDateOverride={handleUpdateDateOverride} />
+          )}
 
           {activeTab === 'transactions' && (
             <TransactionManager
